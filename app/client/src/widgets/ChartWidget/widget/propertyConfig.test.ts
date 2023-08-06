@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import { isString, get } from "lodash";
+import { isString } from "lodash";
 
 import { styleConfig, contentConfig } from "./propertyConfig";
 import type { PropertyPaneControlConfig } from "constants/PropertyControlConstants";
@@ -66,30 +66,92 @@ expect.extend({
   },
 });
 
-describe("Validate Chart Widget's property config", () => {
-  it("Validates Chart Widget's property config", () => {
-    expect(config).toBePropertyPaneConfig();
+it("Validates Chart Widget's property config", () => {
+  expect(config).toBePropertyPaneConfig();
+});
+
+describe("Validate Chart Widget's data property config", () => {
+  const propertyConfigs: PropertyPaneControlConfig[] = config
+    .map((sectionConfig) => sectionConfig.children)
+    .flat();
+
+  it("Validates customFusionChartConfig property is visible when chartType is CUSTOM_FUSION_CHART", () => {
+    const customFusionChartPropertyConfig = propertyConfigs.filter(
+      (propertyConfig) => {
+        return propertyConfig.propertyName == "customFusionChartConfig";
+      },
+    );
+
+    const hiddenFns = customFusionChartPropertyConfig.map(
+      (config) => config.hidden,
+    ) as unknown as ((props: any) => boolean)[];
+
+    expect(hiddenFns.length).toEqual(1);
+
+    hiddenFns.forEach((fn) => {
+      let result = true;
+      result = fn({ chartType: "CUSTOM_FUSION_CHART" });
+      expect(result).toBeFalsy();
+    });
   });
 
-  it("Validates config when chartType is CUSTOM_FUSION_CHART", () => {
-    const hiddenFn = get(
-      config,
-      "[0].children.[1].hidden", // propertyName: "customFusionChartConfig"
-    ) as unknown as (props: any) => boolean;
-    let result = true;
-    if (hiddenFn) result = hiddenFn({ chartType: "CUSTOM_FUSION_CHART" });
-    expect(result).toBeFalsy();
+  it("Validates customEChart property is visible when chartType is CUSTOM_ECHART", () => {
+    const customEChartPropertyConfig = propertyConfigs.filter(
+      (propertyConfig) => {
+        return propertyConfig.propertyName == "customEChartConfig";
+      },
+    );
+
+    const hiddenFns = customEChartPropertyConfig.map(
+      (config) => config.hidden,
+    ) as unknown as ((props: any) => boolean)[];
+    expect(hiddenFns.length).toEqual(1);
+
+    hiddenFns.forEach((fn) => {
+      let result = true;
+      result = fn({ chartType: "CUSTOM_ECHART" });
+      expect(result).toBeFalsy();
+    });
   });
 
-  it("Validates that sections are hidden when chartType is CUSTOM_FUSION_CHART", () => {
-    const hiddenFns = [
-      get(config, "[0].children.[2].hidden"), // propertyName: "chartData"
-      get(config, "[2].children.[1].hidden"), // propertyName: "xAxisName"
-      get(config, "[2].children.[2].hidden"), // propertyName: "yAxisName"
-      get(config, "[2].children.[3].hidden"), // propertyName: "labelOrientation",
-    ] as unknown as ((props: any) => boolean)[];
+  it("Validates that unrelated property configs are hidden when chartType is CUSTOM_FUSION_CHART", () => {
+    const configs = propertyConfigs.filter((propertyConfig) => {
+      return (
+        propertyConfig.propertyName == "customEChartConfig" ||
+        propertyConfig.propertyName == "chartData" ||
+        propertyConfig.propertyName == "xAxisName" ||
+        propertyConfig.propertyName == "yAxisName" ||
+        propertyConfig.propertyName == "labelOrientation"
+      );
+    });
+    const hiddenFns = configs.map((config) => config.hidden) as unknown as ((
+      props: any,
+    ) => boolean)[];
+    expect(hiddenFns.length).toEqual(5);
+
     hiddenFns.forEach((fn) => {
       const result = fn({ chartType: "CUSTOM_FUSION_CHART" });
+      expect(result).toBeTruthy();
+    });
+  });
+
+  it("Validates that unrelated property configs are hidden when chartType is CUSTOM_ECHART", () => {
+    const configs = propertyConfigs.filter((propertyConfig) => {
+      return (
+        propertyConfig.propertyName == "customFusionChartConfig" ||
+        propertyConfig.propertyName == "chartData" ||
+        propertyConfig.propertyName == "xAxisName" ||
+        propertyConfig.propertyName == "yAxisName" ||
+        propertyConfig.propertyName == "labelOrientation"
+      );
+    });
+    const hiddenFns = configs.map((config) => config.hidden) as unknown as ((
+      props: any,
+    ) => boolean)[];
+    expect(hiddenFns.length).toEqual(5);
+
+    hiddenFns.forEach((fn) => {
+      const result = fn({ chartType: "CUSTOM_ECHART" });
       expect(result).toBeTruthy();
     });
   });
