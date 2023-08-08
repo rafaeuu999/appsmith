@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import { isString, get } from "lodash";
+import { isString } from "lodash";
 
 import { styleConfig, contentConfig } from "./propertyConfig";
 import type { PropertyPaneControlConfig } from "constants/PropertyControlConstants";
@@ -142,13 +142,14 @@ describe("Validate Chart Widget's data property config", () => {
         propertyConfig.propertyName == "chartData" ||
         propertyConfig.propertyName == "xAxisName" ||
         propertyConfig.propertyName == "yAxisName" ||
-        propertyConfig.propertyName == "labelOrientation"
+        propertyConfig.propertyName == "labelOrientation" ||
+        propertyConfig.propertyName == "setAdaptiveYMin"
       );
     });
     const hiddenFns = configs.map((config) => config.hidden) as unknown as ((
       props: any,
     ) => boolean)[];
-    expect(hiddenFns.length).toEqual(5);
+    expect(hiddenFns.length).toEqual(6);
 
     hiddenFns.forEach((fn) => {
       const result = fn({ chartType: "CUSTOM_ECHART" });
@@ -171,11 +172,16 @@ describe("Validate Chart Widget's data property config", () => {
   });
 
   it("validates the datasource field is required in customFusionChartConfig", () => {
-    const customFusionChartConfig: any = get(config, "[0].children.[1]");
+    const customFusionChartConfig = propertyConfigs.find((propertyConfig) => {
+      return propertyConfig.propertyName == "customFusionChartConfig";
+    });
+    expect(customFusionChartConfig).not.toBeNull();
+    // const customFusionChartConfig: any = get(config, "[0].children.[1]");
     const dataSourceValidations =
-      customFusionChartConfig.validation.params.allowedKeys[1];
+      customFusionChartConfig?.validation?.params?.allowedKeys?.[1];
 
-    expect(dataSourceValidations.params.required).toEqual(true);
-    expect(dataSourceValidations.params.ignoreCase).toEqual(false);
+    expect(dataSourceValidations?.params?.required).toEqual(true);
+    expect(dataSourceValidations?.params?.ignoreCase).not.toBeNull();
+    expect(dataSourceValidations?.params?.ignoreCase).toEqual(false);
   });
 });
