@@ -90,7 +90,21 @@ export type PropertyUpdates = {
 export type WidgetMethods =
   | GetQueryGenerationConfig
   | GetPropertyUpdatesForQueryBinding
-  | getSnipingModeUpdates;
+  | getSnipingModeUpdates
+  | WidgetCallouts;
+
+type WidgetCallouts = (props: WidgetProps) => WidgetCallout[];
+
+export type WidgetCallout = {
+  message: string;
+  hidden: boolean;
+  links: [
+    {
+      text: string;
+      url: string;
+    },
+  ];
+};
 
 type GetQueryGenerationConfig = (
   widgetProps: WidgetProps,

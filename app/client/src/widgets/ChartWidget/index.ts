@@ -6,6 +6,8 @@ import { LabelOrientation } from "./constants";
 import IconSVG from "./icon.svg";
 import Widget from "./widget";
 import { WIDGET_TAGS } from "constants/WidgetConstants";
+import type { WidgetProps } from "widgets/BaseWidget";
+import type { WidgetCallout } from "widgets/constants";
 
 export const CONFIG = {
   type: Widget.getWidgetType(),
@@ -110,6 +112,23 @@ export const CONFIG = {
     styleConfig: Widget.getPropertyPaneStyleConfig(),
     stylesheetConfig: Widget.getStylesheetConfig(),
     autocompleteDefinitions: Widget.getAutocompleteDefinitions(),
+  },
+  methods: {
+    WidgetCallouts: (props: WidgetProps): WidgetCallout[] => {
+      return [
+        {
+          message:
+            "Custom Fusion Charts will stop being supported on March 1st 2024. Change the chart type to E-charts Custom to switch.",
+          hidden: props.chartType !== "CUSTOM_FUSION_CHART",
+          links: [
+            {
+              text: "Learn More",
+              url: "https://www.appsmith.com",
+            },
+          ],
+        },
+      ];
+    },
   },
   autoLayout: {
     widgetSize: [

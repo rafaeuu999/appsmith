@@ -3,7 +3,7 @@ import { useContext } from "react";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import equal from "fast-deep-equal/es6";
 import { useDispatch, useSelector } from "react-redux";
-import { getWidgetPropsForPropertyPaneView } from "selectors/propertyPaneSelectors";
+import { getWidgetPropsForPropertyPane } from "selectors/propertyPaneSelectors";
 import type { IPanelProps } from "@blueprintjs/core";
 
 import PropertyPaneTitle from "./PropertyPaneTitle";
@@ -22,7 +22,7 @@ import { buildDeprecationWidgetMessage, isWidgetDeprecated } from "../utils";
 import { Button, Callout } from "design-system";
 import WidgetFactory from "utils/WidgetFactory";
 import { PropertyPaneTab } from "./PropertyPaneTab";
-import { useSearchText } from "./helpers";
+import { useSearchText, widgetCallouts } from "./helpers";
 import { PropertyPaneSearchInput } from "./PropertyPaneSearchInput";
 import { sendPropertyPaneSearchAnalytics } from "./propertyPaneSearch";
 import WalkthroughContext from "components/featureWalkthrough/walkthroughContext";
@@ -37,6 +37,7 @@ import {
   createMessage,
 } from "@appsmith/constants/messages";
 import { getWidgets } from "sagas/selectors";
+import type { WidgetProps } from "widgets/BaseWidget";
 
 // TODO(abhinav): The widget should add a flag in their configuration if they donot subscribe to data
 // Widgets where we do not want to show the CTA
@@ -64,10 +65,7 @@ function PropertyPaneView(
 ) {
   const dispatch = useDispatch();
   const { ...panel } = props;
-  const widgetProperties = useSelector(
-    getWidgetPropsForPropertyPaneView,
-    equal,
-  );
+  const widgetProperties = useSelector(getWidgetPropsForPropertyPane, equal);
 
   const doActionsExist = useSelector(actionsExist);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -155,9 +153,9 @@ function PropertyPaneView(
    */
   useEffect(() => {
     sendPropertyPaneSearchAnalytics({
-      widgetType: widgetProperties?.type,
+      widgetType: widgetProperties?.type ?? "",
       searchText,
-      widgetName: widgetProperties.widgetName,
+      widgetName: widgetProperties?.widgetName ?? "",
       searchPath: "",
     });
   }, [searchText]);
@@ -244,6 +242,30 @@ function PropertyPaneView(
     widgetProperties.type,
   ).length;
 
+  const widgetCalloutDOMs = (props: WidgetProps) => {
+    const callouts = widgetCallouts(props);
+    const doms: JSX.Element[] = [];
+    for (const callout of callouts) {
+      const links = callout.links.map((link) => {
+        return {
+          children: link.text,
+          to: link.url,
+        };
+      });
+      const dom = (
+        <Callout
+          data-testid="t--deprecation-warning"
+          kind="warning"
+          links={links}
+        >
+          {callout.message}
+        </Callout>
+      );
+      doms.push(dom);
+    }
+    return doms;
+  };
+
   return (
     <div
       className="w-full h-full overflow-y-scroll"
@@ -275,6 +297,7 @@ function PropertyPaneView(
             {deprecationMessage}
           </Callout>
         )}
+        {widgetCalloutDOMs(widgetProperties)}
       </div>
 
       <div
