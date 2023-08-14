@@ -1,5 +1,4 @@
 import type { ReactNode, CSSProperties } from "react";
-import type { OmitRename } from "../../utils";
 import type { SizingDimension, SpacingDimension } from "./dimensions";
 
 export type Responsive<T> =
@@ -180,5 +179,3 @@ export interface FlexProps {
   /** Sets inline [style](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/style) for the element. Only use as a **last resort**. Use style props instead. */
   style?: CSSProperties;
 }
-
-export type StyledFlexProps = OmitRename<FlexProps, "style" | "className">;

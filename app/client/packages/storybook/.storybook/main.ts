@@ -1,4 +1,3 @@
-import { dirname, join } from "path";
 import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 
 async function webpackConfig(config) {
@@ -17,23 +16,26 @@ async function webpackConfig(config) {
   });
 
   config.module.rules.push({
-    test: /\.css$/,
+    test: /\.module\.css$/,
     use: [
       {
         loader: "postcss-loader",
         options: {
           postcssOptions: {
             plugins: [
-              require("postcss-nesting"),
-              require("postcss-import"),
-              require("postcss-at-rules-variables"),
-              require("postcss-conditionals"),
-              require("postcss-for"),
-              require("postcss-each"),
-              require("postcss-url"),
-              require("cssnano")({
-                preset: "default",
-              }),
+              "postcss-nesting",
+              "postcss-import",
+              "postcss-at-rules-variables",
+              "postcss-conditionals",
+              "postcss-for",
+              "postcss-each",
+              "postcss-modules-values",
+              [
+                "cssnano",
+                {
+                  preset: ["default"],
+                },
+              ],
             ],
           },
         },
@@ -59,17 +61,18 @@ function getStories() {
 module.exports = {
   stories: getStories(),
   addons: [
-    getAbsolutePath("@storybook/addon-viewport"),
-    getAbsolutePath("@storybook/addon-docs"),
-    getAbsolutePath("@storybook/addon-actions"),
-    getAbsolutePath("@storybook/addon-controls"),
-    getAbsolutePath("@storybook/addon-toolbars"),
-    getAbsolutePath("@storybook/addon-measure"),
-    getAbsolutePath("@storybook/addon-outline"),
-    getAbsolutePath("@storybook/preset-create-react-app"),
+    "@storybook/addon-viewport",
+    "@storybook/addon-docs",
+    "@storybook/addon-actions",
+    "@storybook/addon-controls",
+    "@storybook/addon-toolbars",
+    "@storybook/addon-measure",
+    "@storybook/addon-outline",
+    "@storybook/preset-create-react-app",
+    "./addons/theming/manager.ts",
   ],
   framework: {
-    name: getAbsolutePath("@storybook/react-webpack5"),
+    name: "@storybook/react-webpack5",
     options: {},
   },
   webpackFinal: webpackConfig,
@@ -86,10 +89,3 @@ module.exports = {
     disableTelemetry: true,
   },
 };
-/**
- * This function is used to resolve the absolute path of a package.
- * It is needed in projects that use Yarn PnP or are set up within a monorepo.
- */
-function getAbsolutePath(value) {
-  return dirname(require.resolve(join(value, "package.json")));
-}
