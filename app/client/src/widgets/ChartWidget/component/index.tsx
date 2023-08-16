@@ -138,6 +138,7 @@ class ChartComponent extends React.Component<
         ...EChartsDatasetBuilder.datasetFromData(this.eChartsData),
       },
     };
+    // console.log("***", "options are ", JSON.stringify(options))
     return options;
   };
 

@@ -8,9 +8,22 @@ import {
 } from "../constants";
 
 import { Colors } from "constants/Colors";
+import { EChartsLayoutBuilder } from "./EChartsLayoutBuilder";
 
 export class EChartsConfigurationBuilder {
   fontFamily: string | undefined;
+  layoutBuilder: EChartsLayoutBuilder;
+  layoutConfig: Record<string, any> = {};
+
+  constructor() {
+    this.layoutBuilder = new EChartsLayoutBuilder({
+      allowScroll: false,
+      height: 0,
+      width: 0,
+      labelOrientation: LabelOrientation.AUTO,
+      chartType: "LINE_CHART",
+    });
+  }
 
   #seriesConfigurationForPieChart(
     seriesID: string,
@@ -24,8 +37,8 @@ export class EChartsConfigurationBuilder {
 
     const config = {
       type: "pie",
-      radius: "40%",
-      center: ["50%", "55%"],
+      radius: "60%",
+      center: ["50%", "60%"],
       name: seriesName,
       label: {
         show: showDataPointLabel,
@@ -106,19 +119,24 @@ export class EChartsConfigurationBuilder {
     return configs;
   }
 
+  labelOffset = (props: any) => {
+    return 0.3 * props.dimensions.componentHeight - 35;
+  };
+
   #evaluateFontFamily(fontFamily: string | undefined) {
     return fontFamily === "System Default" ? "inherit" : fontFamily;
   }
 
-  #titleConfigForPiechart(allSeriesData: AllChartData) {
+  #titleConfigForPiechart(props: any, allSeriesData: AllChartData) {
     const config: Record<string, unknown>[] = [];
     const numSeries = Object.keys(allSeriesData).length;
     const interval = 100 / (numSeries + 1);
 
+    const labelOff = this.labelOffset(props);
     Object.values(allSeriesData).forEach((seriesData, index) => {
       const offset = `${(index + 1) * interval}%`;
       config.push({
-        top: "25%",
+        top: labelOff,
         left: offset,
         textAlign: "center",
         text: seriesData.seriesName ?? "",
@@ -130,6 +148,7 @@ export class EChartsConfigurationBuilder {
   #titleConfigForChart(
     props: ChartComponentProps,
     allSeriesData: AllChartData,
+    showConfig: Record<string, any>,
   ) {
     /**
      * title: [
@@ -148,6 +167,7 @@ export class EChartsConfigurationBuilder {
      */
     const defaultTitleConfig = {
       text: props.chartName,
+      show: showConfig.title.show,
       padding: [5, 50],
       left: "center",
       textStyle: {
@@ -162,7 +182,7 @@ export class EChartsConfigurationBuilder {
     if (props.chartType == "PIE_CHART") {
       return [
         defaultTitleConfig,
-        ...this.#titleConfigForPiechart(allSeriesData),
+        ...this.#titleConfigForPiechart(props, allSeriesData),
       ];
     } else {
       return defaultTitleConfig;
@@ -170,74 +190,60 @@ export class EChartsConfigurationBuilder {
   }
 
   #configForLabelOrientation(props: ChartComponentProps) {
-    const config: Record<string, unknown> = {
-      fontFamily: this.fontFamily,
-      color: Colors.DOVE_GRAY2,
-    };
-    if (props.labelOrientation == "slant") {
-      config.rotate = "45";
-    } else if (props.labelOrientation == "rotate") {
-      config.rotate = "90";
-    } else {
-      config.rotate = "0";
+    switch (props.labelOrientation) {
+      case LabelOrientation.SLANT:
+        return 45;
+      case LabelOrientation.ROTATE:
+        return 90;
+      default:
+        return 0;
     }
-    return config;
-  }
-
-  #gridBottomOffset(props: ChartComponentProps) {
-    let offset = 100;
-    if (props.labelOrientation == LabelOrientation.ROTATE) {
-      const offsetPercentage = 0.2 * props.dimensions.componentHeight;
-      if (offsetPercentage > offset) {
-        offset = offsetPercentage;
-      }
-    }
-
-    if (props.allowScroll) {
-      offset += 50;
-    }
-
-    return offset;
   }
 
   #defaultEChartConfig = (
-    props: ChartComponentProps,
+    layoutConfig: Record<string, any>,
   ): Record<string, unknown> => {
     const config: Record<string, any> = {
       legend: {
+        show: layoutConfig.legend.show,
         type: "scroll",
         left: "center",
         align: "left",
-        top: "50",
+        top: layoutConfig.title.show ? "50" : 0,
         orient: "horizontal",
         textStyle: { fontFamily: this.fontFamily },
         padding: [5, 50],
       },
-
       tooltip: {
         trigger: "item",
       },
     };
     config.grid = {
-      top: 100,
-      bottom: this.#gridBottomOffset(props),
-      left: "100",
+      top: layoutConfig.grid.top,
+      bottom: layoutConfig.grid.bottom,
+      left: layoutConfig.grid.left,
+      backgroundColor: "#f00",
+      show: false,
     };
     return config;
   };
 
-  #yAxisConfig = (props: ChartComponentProps) => {
+  #yAxisConfig = (props: ChartComponentProps, layoutConfig: any) => {
     /**
      * {
      *  type: "value", name: "Y Axis Name", nameLocation: "end"
      * }
      */
-    let config: Record<string, unknown> = {};
+    let config: Record<string, unknown> = {
+      show: layoutConfig.yAxis.show,
+    };
+
     if (props.chartType != "PIE_CHART") {
       config = {
+        ...config,
         name: props.yAxisName,
         nameLocation: "middle",
-        nameGap: 70,
+        nameGap: layoutConfig.yAxis.nameGap,
         nameTextStyle: {
           fontSize: 14,
           fontFamily: this.fontFamily,
@@ -254,24 +260,14 @@ export class EChartsConfigurationBuilder {
     config.axisLabel = {
       fontFamily: this.fontFamily,
       color: Colors.DOVE_GRAY2,
+      show: layoutConfig.yAxis.show,
+      width: layoutConfig.yAxis.axisLabel.width,
+      overflow: "break",
     };
     return config;
   };
 
-  #nameGapForXAxisLabel = (props: ChartComponentProps) => {
-    let gap = 40;
-
-    if (props.labelOrientation == LabelOrientation.ROTATE) {
-      const percentageGap = 0.12 * props.dimensions.componentHeight;
-      if (percentageGap > gap) {
-        gap = percentageGap;
-      }
-    }
-
-    return gap;
-  };
-
-  #xAxisConfig = (props: ChartComponentProps) => {
+  #xAxisConfig = (props: ChartComponentProps, layoutConfig: any) => {
     /**
      * {
      *  type: "value", name: "X Axis Name", nameLocation: "end"
@@ -283,7 +279,14 @@ export class EChartsConfigurationBuilder {
       type = "value";
     }
     config.type = type;
-    config.axisLabel = this.#configForLabelOrientation(props);
+    config.axisLabel = {
+      show: layoutConfig.xAxis.show,
+      fontFamily: this.fontFamily,
+      color: Colors.DOVE_GRAY2,
+      rotate: this.#configForLabelOrientation(props),
+      width: layoutConfig.xAxis.axisLabel.width,
+      overflow: "break",
+    };
 
     if (props.chartType == "BAR_CHART" && props.setAdaptiveYMin) {
       config.min = "dataMin";
@@ -292,27 +295,31 @@ export class EChartsConfigurationBuilder {
     if (props.chartType != "PIE_CHART") {
       config.name = props.xAxisName;
       config.nameLocation = "middle";
-      config.nameGap = this.#nameGapForXAxisLabel(props);
+      config.backgroundColor = "#f00";
+      config.nameGap = layoutConfig.xAxis.nameGap; // this.#nameGapForXAxisLabel(props);
       config.nameTextStyle = {
         fontSize: 14,
         fontFamily: this.fontFamily,
         color: Colors.DOVE_GRAY2,
+        overflow: "",
       };
-    } else {
-      config.show = false;
     }
+
+    config.show = layoutConfig.xAxis.show;
     return config;
   };
 
-  #scrollConfig = (props: ChartComponentProps) => {
+  #scrollConfig = (props: ChartComponentProps, layoutConfig: any) => {
     if (props.allowScroll) {
       if (props.chartType != "PIE_CHART") {
         return [
           {
+            show: layoutConfig.scrollBar.show,
             type: "slider",
             filterMode: "filter",
             start: "20",
-            bottom: "50",
+            bottom: layoutConfig.scrollBar.bottom,
+            height: layoutConfig.scrollBar.height,
           },
         ];
       }
@@ -321,15 +328,29 @@ export class EChartsConfigurationBuilder {
   };
 
   prepareEChartConfig(props: ChartComponentProps, allSeriesData: AllChartData) {
+    // const showConfig = this.componentConfiguration(props, 80, 250)
+    this.layoutBuilder = new EChartsLayoutBuilder({
+      allowScroll: props.allowScroll,
+      height: props.dimensions.componentHeight,
+      width: props.dimensions.componentWidth,
+      labelOrientation: props.labelOrientation ?? LabelOrientation.AUTO,
+      chartType: props.chartType,
+    });
+    const layoutConfig = this.layoutBuilder.layoutConfig;
+
     this.fontFamily = this.#evaluateFontFamily(props.fontFamily);
 
     const chartConfig: Record<string, unknown> =
-      this.#defaultEChartConfig(props);
-    chartConfig.title = this.#titleConfigForChart(props, allSeriesData);
-    chartConfig.xAxis = this.#xAxisConfig(props);
-    chartConfig.yAxis = this.#yAxisConfig(props);
+      this.#defaultEChartConfig(layoutConfig);
+    chartConfig.title = this.#titleConfigForChart(
+      props,
+      allSeriesData,
+      layoutConfig,
+    );
+    chartConfig.xAxis = this.#xAxisConfig(props, layoutConfig);
+    chartConfig.yAxis = this.#yAxisConfig(props, layoutConfig);
 
-    chartConfig.dataZoom = this.#scrollConfig(props);
+    chartConfig.dataZoom = this.#scrollConfig(props, layoutConfig);
     chartConfig.series = this.#seriesConfigForChart(props, allSeriesData);
     return chartConfig;
   }
